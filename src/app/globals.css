@@ -83,7 +83,7 @@
   --sidebar-ring: oklch(0.711 0.019 323.02);
 }
 
-.dark {
+html.dark {
   --background: oklch(0.145 0.008 326);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.212 0.019 322.12);
@@ -127,4 +127,22 @@
   html {
     @apply font-sans;
   }
+}
+
+/* NodeResizer: hide the dashed outline, style handles as primary circles */
+.react-flow__resize-control.line {
+  display: none !important;
+}
+
+.react-flow__resize-control.handle {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: var(--primary) !important;
+  border: 2px solid var(--background) !important;
+}
+
+/* Selected edge color */
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--primary) !important;
 }
