@@ -12,6 +12,7 @@ export function KeyboardShortcuts() {
   const pasteSelection = useDiagramStore((s) => s.pasteSelection);
   const duplicateSelection = useDiagramStore((s) => s.duplicateSelection);
   const deleteSelection = useDiagramStore((s) => s.deleteSelection);
+  const selectAll = useDiagramStore((s) => s.selectAll);
   const addNode = useDiagramStore((s) => s.addNode);
 
   useEffect(() => {
@@ -76,6 +77,13 @@ export function KeyboardShortcuts() {
         return;
       }
 
+      // Select all: Ctrl+A
+      if (ctrl && e.key === "a") {
+        e.preventDefault();
+        selectAll();
+        return;
+      }
+
       // Add node: N
       if (e.key === "n" && !ctrl) {
         addNode("rectangle");
@@ -92,6 +100,7 @@ export function KeyboardShortcuts() {
     pasteSelection,
     duplicateSelection,
     deleteSelection,
+    selectAll,
     fitView,
     addNode,
   ]);

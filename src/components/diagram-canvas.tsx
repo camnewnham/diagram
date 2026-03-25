@@ -21,6 +21,7 @@ import { DiagramNode } from "@/components/nodes/diagram-node";
 import { EditableEdge } from "@/components/edges/editable-edge-label";
 import { Toolbar } from "@/components/toolbar";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
+import { CanvasContextMenu } from "@/components/canvas-context-menu";
 
 const nodeTypes: NodeTypes = {
   diagram: DiagramNode,
@@ -45,8 +46,10 @@ export function DiagramCanvas() {
   const pushHistory = useDiagramStore((s) => s.pushHistory);
   const edgeStyle = useDiagramStore((s) => s.edgeStyle);
   const { screenToFlowPosition } = useReactFlow();
+  const addNode = useDiagramStore((s) => s.addNode);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [dark, setDark] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; flowX: number; flowY: number } | null>(null);
 
   // Listen for snap toggle from toolbar
   useEffect(() => {
@@ -77,6 +80,16 @@ export function DiagramCanvas() {
   const handleNodeDragStart = useCallback(() => {
     pushHistory();
   }, [pushHistory]);
+
+  const handlePaneContextMenu = useCallback(
+    (event: React.MouseEvent | MouseEvent) => {
+      event.preventDefault();
+      const e = event as React.MouseEvent;
+      const { x, y } = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      setContextMenu({ x: e.clientX, y: e.clientY, flowX: x, flowY: y });
+    },
+    [screenToFlowPosition],
+  );
 
   const handleConnectEnd = useCallback(
     (event: MouseEvent | TouchEvent, connectionState: any) => {
@@ -136,6 +149,7 @@ export function DiagramCanvas() {
         multiSelectionKeyCode={["Meta", "Control", "Shift"]}
         zoomOnDoubleClick={false}
         onConnectEnd={handleConnectEnd}
+        onPaneContextMenu={handlePaneContextMenu}
         onViewportChange={handleViewportChange}
         selectionMode={SelectionMode.Partial}
         elevateNodesOnSelect
@@ -158,6 +172,19 @@ export function DiagramCanvas() {
         <Toolbar />
         <KeyboardShortcuts />
       </ReactFlow>
+      {contextMenu && (
+        <CanvasContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onAddNode={() =>
+            addNode("rectangle", {
+              x: contextMenu.flowX - 80,
+              y: contextMenu.flowY - 40,
+            })
+          }
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }

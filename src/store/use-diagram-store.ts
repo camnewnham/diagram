@@ -52,6 +52,9 @@ interface DiagramState {
   // Edge style
   cycleEdgeStyle: () => void;
 
+  // Select all
+  selectAll: () => void;
+
   // Add node + connect in one action
   addNodeAndConnect: (shape: NodeShape, position: { x: number; y: number }, fromNodeId: string, fromHandleId: string, isSource: boolean) => void;
 }
@@ -291,6 +294,14 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
           !selectedNodeIds.has(e.source) &&
           !selectedNodeIds.has(e.target)
       ),
+    });
+  },
+
+  selectAll: () => {
+    const { nodes, edges } = get();
+    set({
+      nodes: nodes.map((n) => ({ ...n, selected: true })),
+      edges: edges.map((e) => ({ ...e, selected: true })),
     });
   },
 
