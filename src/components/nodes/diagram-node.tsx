@@ -12,6 +12,9 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   const { shape, label } = nodeData;
   const updateNodeLabel = useDiagramStore((s) => s.updateNodeLabel);
   const { shift } = useModifierKeys();
+  const [hovered, setHovered] = useState(false);
+  const handleMouseEnter = useCallback(() => setHovered(true), []);
+  const handleMouseLeave = useCallback(() => setHovered(false), []);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(label);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -105,7 +108,8 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
     </div>
   );
 
-  const handleClass = "!w-2 !h-2 !bg-muted-foreground !border-background";
+  const handleClass = `!w-2 !h-2 !border-background ${selected ? "!bg-primary" : "!bg-muted-foreground"}`;
+  const handleStyle: React.CSSProperties = { opacity: hovered || selected ? 1 : 0, transition: "opacity 0.15s" };
 
   const handles = (
     <>
@@ -116,6 +120,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
           type="source"
           position={pos}
           className={handleClass}
+          style={handleStyle}
         />
       ))}
       {handlePositions.map((pos) => (
@@ -125,12 +130,13 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
           type="target"
           position={pos}
           className={handleClass}
+          style={handleStyle}
         />
       ))}
     </>
   );
 
-  const borderClass = selected ? "border-primary" : "border-border";
+  const borderClass = selected ? "border-primary" : "border-muted-foreground";
 
   const minW = Math.max(80, contentSize.w + 16);
   const minH = Math.max(shape === "rectangle" ? 40 : 60, contentSize.h + 16);
@@ -152,11 +158,13 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   );
 
   if (shape === "diamond") {
-    const stroke = selected ? "var(--color-primary)" : "var(--color-border)";
+    const stroke = selected ? "var(--color-primary)" : "var(--color-muted-foreground)";
     return (
       <div
         className="relative w-full h-full"
         style={{ minWidth: minW, minHeight: minH }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {sizer}
         <NodeResizer
@@ -191,6 +199,8 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
       <div
         className="relative w-full h-full"
         style={{ minWidth: minW, minHeight: minH }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {sizer}
         <NodeResizer
@@ -214,6 +224,8 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
     <div
       className="relative w-full h-full"
       style={{ minWidth: minW, minHeight: minH }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {sizer}
       <NodeResizer

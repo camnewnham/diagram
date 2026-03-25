@@ -12,6 +12,7 @@ import {
   useReactFlow,
   type NodeTypes,
   type EdgeTypes,
+  type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDiagramStore } from "@/store/use-diagram-store";
@@ -67,6 +68,10 @@ export function DiagramCanvas() {
       attributeFilter: ["class"],
     });
     return () => observer.disconnect();
+  }, []);
+
+  const handleViewportChange = useCallback(({ zoom }: Viewport) => {
+    document.documentElement.classList.toggle("zoomed-in", zoom >= 1);
   }, []);
 
   const handleNodeDragStart = useCallback(() => {
@@ -131,6 +136,7 @@ export function DiagramCanvas() {
         multiSelectionKeyCode={["Meta", "Control", "Shift"]}
         zoomOnDoubleClick={false}
         onConnectEnd={handleConnectEnd}
+        onViewportChange={handleViewportChange}
         selectionMode={SelectionMode.Partial}
         elevateNodesOnSelect
         elevateEdgesOnSelect

@@ -142,7 +142,16 @@ html.dark {
   border: 2px solid var(--background) !important;
 }
 
-/* Selected edge color */
+/* Show handles when zoomed in (zoom >= 1) */
+html.zoomed-in .react-flow__handle {
+  opacity: 1 !important;
+}
+
+/* Edge colors */
+.react-flow__edge-path {
+  stroke: var(--muted-foreground) !important;
+}
+
 .react-flow__edge.selected .react-flow__edge-path {
   stroke: var(--primary) !important;
 }

@@ -1,8 +1,4 @@
-- fix: when multiple nodes and edges selected, edges render on top of labels
-
-- feat: when zoomed out, hide handles. show them when zoomed in, hovered or selected.
-
-- feat: right click context menu when clicking on blank canvas space.
+- feat: right click context menu when clicking on blank canvas space. One option: "Add node"
 
 - feat: remove top menu. use contextual menus instead, as follows:
 - add grid snap, dark/light toggle to the in-built react-flow toolbar

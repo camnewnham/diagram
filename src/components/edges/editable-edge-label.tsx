@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   BaseEdge,
   EdgeLabelRenderer,
+  Position,
   getBezierPath,
   getStraightPath,
   getSmoothStepPath,
@@ -12,6 +13,36 @@ import {
 import type { EdgeStyle } from "@/store/types";
 import { useDiagramStore } from "@/store/use-diagram-store";
 import { MarkdownLabel } from "@/components/markdown-label";
+
+const EDGE_INSET = 4;
+
+const POSITION_OFFSET: Record<Position, [number, number]> = {
+  right: [-EDGE_INSET, 0],
+  left: [EDGE_INSET, 0],
+  bottom: [0, -EDGE_INSET],
+  top: [0, EDGE_INSET],
+};
+
+function insetEndpoints<
+  T extends {
+    sourceX: number;
+    sourceY: number;
+    targetX: number;
+    targetY: number;
+    sourcePosition: string;
+    targetPosition: string;
+  },
+>(params: T): T {
+  const [sdx, sdy] = POSITION_OFFSET[params.sourcePosition as Position] ?? [0, 0];
+  const [tdx, tdy] = POSITION_OFFSET[params.targetPosition as Position] ?? [0, 0];
+  return {
+    ...params,
+    sourceX: params.sourceX + sdx,
+    sourceY: params.sourceY + sdy,
+    targetX: params.targetX + tdx,
+    targetY: params.targetY + tdy,
+  };
+}
 
 function computePath(
   edgeStyle: EdgeStyle,
@@ -24,13 +55,14 @@ function computePath(
     targetPosition: any;
   },
 ): [string, number, number, number, number] {
+  const p = insetEndpoints(params);
   switch (edgeStyle) {
     case "straight":
-      return getStraightPath(params);
+      return getStraightPath(p);
     case "smoothstep":
-      return getSmoothStepPath(params);
+      return getSmoothStepPath(p);
     default:
-      return getBezierPath(params);
+      return getBezierPath(p);
   }
 }
 
@@ -86,7 +118,11 @@ export function EditableEdge({
 
   return (
     <>
-      <BaseEdge path={edgePath} style={style} markerEnd={markerEnd} />
+      <BaseEdge
+        path={edgePath}
+        style={{ strokeWidth: 2, ...style }}
+        markerEnd={markerEnd}
+      />
       <path
         d={edgePath}
         fill="none"
@@ -100,7 +136,7 @@ export function EditableEdge({
           className="absolute pointer-events-auto nodrag nopan"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            zIndex: selected ? 1002 : 1001,
+            zIndex: 2000,
           }}
         >
           {editing ? (
