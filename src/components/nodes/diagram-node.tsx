@@ -5,18 +5,21 @@ import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "@/store/use-diagram-store";
 import { MarkdownLabel } from "@/components/markdown-label";
 import { useModifierKeys } from "@/hooks/use-modifier-keys";
-import type { DiagramNodeData } from "@/store/types";
+import type { DiagramNodeData, TextAlign } from "@/store/types";
+import { blendTint } from "@/lib/utils";
+import { useDark } from "@/hooks/use-dark";
 
 function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as DiagramNodeData;
-  const { shape, label } = nodeData;
+  const { shape, label, tint, textAlign } = nodeData;
+  const dark = useDark();
   const updateNodeLabel = useDiagramStore((s) => s.updateNodeLabel);
   const { shift } = useModifierKeys();
   const [hovered, setHovered] = useState(false);
   const handleMouseEnter = useCallback(() => setHovered(true), []);
   const handleMouseLeave = useCallback(() => setHovered(false), []);
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(label);
+  const [editing, setEditing] = useState(() => !!nodeData.autoEdit);
+  const [editValue, setEditValue] = useState(() => nodeData.autoEdit ? "" : label);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const sizerRef = useRef<HTMLDivElement>(null);
   const [contentSize, setContentSize] = useState({ w: 0, h: 0 });
@@ -47,11 +50,9 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
     };
   }, [editing]);
 
-  // Auto-enter edit mode for newly created nodes
+  // Clear the autoEdit flag after first render
   useEffect(() => {
     if (nodeData.autoEdit) {
-      setEditValue("");
-      setEditing(true);
       useDiagramStore.getState().updateNodeData(id, { autoEdit: false });
     }
   }, [nodeData.autoEdit, id]);
@@ -90,6 +91,16 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
     Position.Left,
   ];
 
+  const alignClass: Record<TextAlign, string> = {
+    left: "text-left justify-start",
+    center: "text-center justify-center",
+    right: "text-right justify-end",
+  };
+  const resolvedAlign = textAlign ?? "center";
+  const textAlignClass = alignClass[resolvedAlign];
+
+  const fillColor = tint && tint !== "transparent" ? blendTint(tint, dark) : undefined;
+
   const content = editing ? (
     <textarea
       ref={inputRef}
@@ -97,12 +108,12 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
       onChange={(e) => setEditValue(e.target.value)}
       onBlur={commitEdit}
       onKeyDown={handleKeyDown}
-      className="w-full h-full bg-transparent text-center text-sm resize-none outline-none border-none leading-snug nodrag nopan overflow-y-auto p-2"
+      className={`w-full h-full bg-transparent text-sm resize-none outline-none border-none leading-snug nodrag nopan overflow-y-auto p-2 ${alignClass[resolvedAlign].split(" ")[0]}`}
     />
   ) : (
     <div
       onDoubleClick={handleDoubleClick}
-      className="w-full h-full flex items-center justify-center p-2 cursor-text min-h-[40px]"
+      className={`w-full h-full flex items-center p-2 cursor-text min-h-[40px] ${textAlignClass}`}
     >
       <MarkdownLabel text={label} />
     </div>
@@ -159,6 +170,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
 
   if (shape === "diamond") {
     const stroke = selected ? "var(--color-primary)" : "var(--color-muted-foreground)";
+    const polygonFill = fillColor ?? "var(--color-background)";
     return (
       <div
         className="relative w-full h-full"
@@ -180,7 +192,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
         >
           <polygon
             points="50,0 100,50 50,100 0,50"
-            fill="var(--color-background)"
+            fill={polygonFill}
             stroke={stroke}
             strokeWidth={2}
             vectorEffect="non-scaling-stroke"
@@ -211,7 +223,8 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
         />
         {handles}
         <div
-          className={`w-full h-full rounded-full bg-background border-2 ${borderClass} flex items-center justify-center overflow-hidden`}
+          className={`w-full h-full rounded-full border-2 ${borderClass} flex items-center justify-center overflow-hidden`}
+          style={{ backgroundColor: fillColor ?? "var(--color-background)" }}
         >
           {content}
         </div>
@@ -236,7 +249,8 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
       />
       {handles}
       <div
-        className={`w-full h-full bg-background border-2 ${borderClass} rounded-lg flex items-center justify-center overflow-hidden`}
+        className={`w-full h-full border-2 ${borderClass} rounded-lg flex items-center justify-center overflow-hidden`}
+        style={{ backgroundColor: fillColor ?? "var(--color-background)" }}
       >
         {content}
       </div>

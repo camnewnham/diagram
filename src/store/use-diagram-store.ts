@@ -9,10 +9,56 @@ import {
   type Connection,
   Position,
 } from "@xyflow/react";
-import type { DiagramNode, DiagramEdge, DiagramNodeData, HistoryEntry, NodeShape, EdgeStyle } from "./types";
+import type {
+  DiagramNode,
+  DiagramEdge,
+  DiagramNodeData,
+  DiagramEdgeData,
+  HistoryEntry,
+  NodeShape,
+  EdgeStyle,
+  DefaultNodeStyle,
+  DefaultEdgeStyle,
+} from "./types";
 import { EDGE_STYLES } from "./types";
 
 const MAX_HISTORY = 100;
+const LS_DEFAULT_NODE = "diagram:defaultNodeStyle";
+const LS_DEFAULT_EDGE = "diagram:defaultEdgeStyle";
+
+function loadDefaultNodeStyle(): DefaultNodeStyle {
+  try {
+    const raw = localStorage.getItem(LS_DEFAULT_NODE);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { shape: "rectangle", tint: "transparent", textAlign: "center" };
+}
+
+function loadDefaultEdgeStyle(): DefaultEdgeStyle {
+  try {
+    const raw = localStorage.getItem(LS_DEFAULT_EDGE);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { edgeStyle: "default", dashStyle: "solid", arrowStyle: "end", strokeWidth: 2, tint: "transparent" };
+}
+
+function saveDefaultNodeStyle(s: DefaultNodeStyle) {
+  try { localStorage.setItem(LS_DEFAULT_NODE, JSON.stringify(s)); } catch {}
+}
+
+function saveDefaultEdgeStyle(s: DefaultEdgeStyle) {
+  try { localStorage.setItem(LS_DEFAULT_EDGE, JSON.stringify(s)); } catch {}
+}
+
+function edgeDataFromDefault(des: DefaultEdgeStyle): DiagramEdgeData {
+  return {
+    edgeStyle: des.edgeStyle,
+    dashStyle: des.dashStyle,
+    arrowStyle: des.arrowStyle,
+    strokeWidth: des.strokeWidth,
+    tint: des.tint,
+  };
+}
 
 interface DiagramState {
   nodes: DiagramNode[];
@@ -25,8 +71,12 @@ interface DiagramState {
   // Clipboard
   clipboard: { nodes: DiagramNode[]; edges: DiagramEdge[] } | null;
 
-  // Edge style
+  // Edge style (global cycle)
   edgeStyle: EdgeStyle;
+
+  // Default styles (applied to new nodes/edges, persisted in localStorage)
+  defaultNodeStyle: DefaultNodeStyle;
+  defaultEdgeStyle: DefaultEdgeStyle;
 
   // Actions
   onNodesChange: OnNodesChange<DiagramNode>;
@@ -37,6 +87,15 @@ interface DiagramState {
   updateNodeLabel: (nodeId: string, label: string) => void;
   updateNodeData: (nodeId: string, data: Partial<DiagramNodeData>) => void;
   updateEdgeLabel: (edgeId: string, label: string) => void;
+  updateEdgeData: (edgeId: string, data: Partial<DiagramEdgeData>) => void;
+  updateSelectedNodesData: (data: Partial<DiagramNodeData>) => void;
+  updateSelectedEdgesData: (data: Partial<DiagramEdgeData>) => void;
+
+  // Default style management
+  setDefaultNodeStyle: (style: DefaultNodeStyle) => void;
+  setDefaultEdgeStyle: (style: DefaultEdgeStyle) => void;
+  applyNodeAsDefault: (nodeId: string) => void;
+  applyEdgeAsDefault: (edgeId: string) => void;
 
   // History
   pushHistory: () => void;
@@ -56,10 +115,10 @@ interface DiagramState {
   selectAll: () => void;
 
   // Add node + connect in one action
-  addNodeAndConnect: (shape: NodeShape, position: { x: number; y: number }, fromNodeId: string, fromHandleId: string, isSource: boolean) => void;
+  addNodeAndConnect: (shape: NodeShape | undefined, position: { x: number; y: number }, fromNodeId: string, fromHandleId: string, isSource: boolean) => void;
 }
 
-const SHAPE_SIZES: Record<NodeShape, { width: number; height: number }> = {
+export const SHAPE_SIZES: Record<NodeShape, { width: number; height: number }> = {
   rectangle: { width: 160, height: 80 },
   diamond: { width: 120, height: 120 },
   circle: { width: 100, height: 100 },
@@ -81,7 +140,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       id: "node-1",
       type: "diagram",
       position: { x: 250, y: 200 },
-      data: { label: "Start", shape: "rectangle" },
+      data: { label: "Start", shape: "rectangle", tint: "transparent", textAlign: "center" },
       selected: false,
       style: { width: 160, height: 80 },
     },
@@ -91,10 +150,11 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   future: [],
   clipboard: null,
   edgeStyle: "default" as EdgeStyle,
+  defaultNodeStyle: loadDefaultNodeStyle(),
+  defaultEdgeStyle: loadDefaultEdgeStyle(),
 
   onNodesChange: (changes) => {
     const state = get();
-    // Push history for meaningful changes (not selection/drag in progress)
     const meaningful = changes.some(
       (c) => c.type === "remove" || c.type === "replace"
     );
@@ -118,11 +178,12 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   onConnect: (connection: Connection) => {
     const state = get();
     state.pushHistory();
+    const ds = state.defaultEdgeStyle;
     const edge: DiagramEdge = {
       ...connection,
       id: nextEdgeId(),
       type: "default",
-      data: { edgeStyle: state.edgeStyle },
+      data: edgeDataFromDefault(ds),
     };
     set({ edges: addEdge(edge, state.edges) });
   },
@@ -133,12 +194,23 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     const id = nextNodeId();
     const pos = position ?? { x: 250 + Math.random() * 100, y: 200 + Math.random() * 100 };
     const autoEdit = options?.autoEdit ?? false;
-    const { width, height } = SHAPE_SIZES[shape];
+    const ds = state.defaultNodeStyle;
+    // If no explicit shape passed, use the default shape
+    const resolvedShape = shape ?? ds.shape;
+    const defaultSize = SHAPE_SIZES[resolvedShape];
+    const width = ds.width ?? defaultSize.width;
+    const height = ds.height ?? defaultSize.height;
     const newNode: DiagramNode = {
       id,
       type: "diagram",
       position: pos,
-      data: { label: autoEdit ? "" : "Node", shape, autoEdit },
+      data: {
+        label: autoEdit ? "" : "Node",
+        shape: resolvedShape,
+        tint: ds.tint,
+        textAlign: ds.textAlign,
+        autoEdit,
+      },
       selected: autoEdit,
       style: { width, height },
     };
@@ -174,6 +246,66 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
         e.id === edgeId ? { ...e, label } : e
       ),
     });
+  },
+
+  updateEdgeData: (edgeId, data) => {
+    set({
+      edges: get().edges.map((e) =>
+        e.id === edgeId ? { ...e, data: { ...e.data, ...data } } : e
+      ),
+    });
+  },
+
+  updateSelectedNodesData: (data) => {
+    set({
+      nodes: get().nodes.map((n) =>
+        n.selected ? { ...n, data: { ...n.data, ...data } } : n
+      ),
+    });
+  },
+
+  updateSelectedEdgesData: (data) => {
+    set({
+      edges: get().edges.map((e) =>
+        e.selected ? { ...e, data: { ...e.data, ...data } } : e
+      ),
+    });
+  },
+
+  setDefaultNodeStyle: (style) => {
+    saveDefaultNodeStyle(style);
+    set({ defaultNodeStyle: style });
+  },
+
+  setDefaultEdgeStyle: (style) => {
+    saveDefaultEdgeStyle(style);
+    set({ defaultEdgeStyle: style, edgeStyle: style.edgeStyle });
+  },
+
+  applyNodeAsDefault: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    const style: DefaultNodeStyle = {
+      shape: node.data.shape,
+      tint: node.data.tint ?? "transparent",
+      textAlign: node.data.textAlign ?? "center",
+      width: node.style?.width as number | undefined,
+      height: node.style?.height as number | undefined,
+    };
+    get().setDefaultNodeStyle(style);
+  },
+
+  applyEdgeAsDefault: (edgeId) => {
+    const edge = get().edges.find((e) => e.id === edgeId);
+    if (!edge) return;
+    const style: DefaultEdgeStyle = {
+      edgeStyle: edge.data?.edgeStyle ?? "default",
+      dashStyle: edge.data?.dashStyle ?? "solid",
+      arrowStyle: edge.data?.arrowStyle ?? "end",
+      strokeWidth: edge.data?.strokeWidth ?? 2,
+      tint: edge.data?.tint ?? "transparent",
+    };
+    get().setDefaultEdgeStyle(style);
   },
 
   pushHistory: () => {
@@ -264,7 +396,6 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       target: idMap.get(e.target) ?? e.target,
     }));
 
-    // Deselect existing
     const deselected = nodes.map((n) => ({ ...n, selected: false }));
 
     set({
@@ -320,13 +451,24 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     state.pushHistory();
     const nodeId = nextNodeId();
 
-    const { width: w, height: h } = SHAPE_SIZES[shape];
+    const ds = state.defaultNodeStyle;
+    const des = state.defaultEdgeStyle;
+    const resolvedShape = shape ?? ds.shape;
+    const defaultSize = SHAPE_SIZES[resolvedShape];
+    const w = ds.width ?? defaultSize.width;
+    const h = ds.height ?? defaultSize.height;
 
     const newNode: DiagramNode = {
       id: nodeId,
       type: "diagram",
       position,
-      data: { label: "", shape, autoEdit: true },
+      data: {
+        label: "",
+        shape: resolvedShape,
+        tint: ds.tint,
+        textAlign: ds.textAlign,
+        autoEdit: true,
+      },
       selected: true,
       style: { width: w, height: h },
     };
@@ -337,7 +479,6 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     const fromCenterX = (fromNode?.position.x ?? 0) + fw / 2;
     const fromCenterY = (fromNode?.position.y ?? 0) + fh / 2;
 
-    // New node handle positions (center of each side)
     const handleCandidates: { pos: Position; x: number; y: number }[] = [
       { pos: Position.Top, x: position.x + w / 2, y: position.y },
       { pos: Position.Bottom, x: position.x + w / 2, y: position.y + h },
@@ -345,7 +486,6 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       { pos: Position.Right, x: position.x + w, y: position.y + h / 2 },
     ];
 
-    // Pick the handle closest to the originating node's center
     let closest = handleCandidates[0];
     let minDist = Infinity;
     for (const c of handleCandidates) {
@@ -353,7 +493,6 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       if (dist < minDist) { minDist = dist; closest = c; }
     }
 
-    // If dragged from a source handle, the new node is the target; otherwise it's the source
     const newHandleType = isSource ? "target" : "source";
     const newEdge: DiagramEdge = isSource
       ? {
@@ -363,7 +502,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
           target: nodeId,
           targetHandle: `${closest.pos}-${newHandleType}`,
           type: "default",
-          data: { edgeStyle: state.edgeStyle },
+          data: edgeDataFromDefault(des),
         }
       : {
           id: nextEdgeId(),
@@ -372,7 +511,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
           target: fromNodeId,
           targetHandle: fromHandleId,
           type: "default",
-          data: { edgeStyle: state.edgeStyle },
+          data: edgeDataFromDefault(des),
         };
 
     set({

@@ -147,11 +147,4 @@ html.zoomed-in .react-flow__handle {
   opacity: 1 !important;
 }
 
-/* Edge colors */
-.react-flow__edge-path {
-  stroke: var(--muted-foreground) !important;
-}
-
-.react-flow__edge.selected .react-flow__edge-path {
-  stroke: var(--primary) !important;
-}
+/* Edge stroke colors are controlled per-edge in editable-edge-label.tsx */
