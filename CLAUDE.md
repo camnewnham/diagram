@@ -10,6 +10,7 @@ A flowchart and diagramming tool.
 - **shadcn/ui** — component library
 - **Tailwind CSS v4** — styling
 - **react-markdown** — markdown rendering in labels (with `remark-gfm` and `rehype-raw`)
+- **@msgpack/msgpack + fflate** — compact binary serialization + compression for URL hash persistence
 
 ## Project Structure
 
@@ -17,29 +18,35 @@ A flowchart and diagramming tool.
 src/
   app/
     page.tsx              — entry point, dynamically imports DiagramCanvas (ssr: false)
+    embed/
+      page.tsx            — read-only embed route (/embed/), loads diagram from hash
     layout.tsx            — root layout with fonts and suppressHydrationWarning
-    globals.css           — Tailwind + shadcn theme variables (light/dark)
+    globals.css           — Tailwind + shadcn theme variables (light/dark + prefers-color-scheme media query)
   store/
     types.ts              — TypeScript types (DiagramNode, DiagramEdge, NodeShape, etc.)
     use-diagram-store.ts  — Zustand store: nodes, edges, history, clipboard, CRUD actions
   components/
-    diagram-canvas.tsx    — main React Flow canvas with background, minimap, context menu wiring
-    toolbar.tsx           — extends React Flow Controls panel: clipboard, undo/redo, snap, theme toggle
+    diagram-canvas.tsx    — main React Flow canvas; accepts readOnly prop; mounts useHashSync
+    toolbar.tsx           — extends React Flow Controls panel: snap, theme toggle, share button
     keyboard-shortcuts.tsx — global keyboard shortcut handler
     markdown-label.tsx    — renders markdown text in node/edge labels
     canvas-context-menu.tsx — right-click on canvas: add rectangle/diamond/circle node
     node-context-menu.tsx — right-click on node: shape, text alignment, fill tint, set-default
     edge-context-menu.tsx — right-click on edge: line style, routing, thickness, color, set-default
     nodes/
-      diagram-node.tsx    — single custom node component supporting rectangle, diamond, circle shapes
+      diagram-node.tsx    — single custom node component; hides handles/resizer in read-only mode
     edges/
       editable-edge-label.tsx — custom edge: routing style, line style (solid/dashed/arrows), stroke width, tint, double-click-to-edit label
     ui/
       button.tsx          — shadcn button component
+  contexts/
+    read-only-context.ts  — React context for read-only mode (used by DiagramCanvas and DiagramNode)
   lib/
     utils.ts              — cn() utility
+    serialization.ts      — encode/decode diagram to/from base64url-compressed-msgpack for URL hash
   hooks/
     use-modifier-keys.ts  — tracks shift/ctrl/alt state (used for aspect-ratio-lock on resize)
+    use-hash-sync.ts      — syncs diagram state to/from window.location.hash (debounced encode, load on mount)
 ```
 
 ## Key Patterns
@@ -61,6 +68,10 @@ src/
 - Dragging an edge to empty canvas space creates a new connected node (`addNodeAndConnect` in the store).
 - `SHAPE_SIZES` constant in the store is the single source of truth for default node dimensions — use it when adding new shapes.
 - `autoEdit` flag on node data triggers immediate edit mode when a node is first created; the flag is cleared after first render.
+- Diagram state is serialized to `window.location.hash` on every change (debounced 300ms) using msgpack + deflate + base64url. Loaded from hash on mount. Default-valued fields are omitted from the payload to minimize size. Numeric enums replace strings for all style values.
+- The share button in the toolbar copies `origin/embed/#<hash>` to clipboard. The `/embed/` route is read-only (no editing, handles, controls, or minimap).
+- `ReadOnlyContext` (boolean React context) is provided by `DiagramCanvas` and consumed by `DiagramNode` to suppress handles, resizer, and double-click editing in embed mode.
+- Dark mode on the embed page follows `prefers-color-scheme` automatically via a CSS media query in `globals.css` (no JS required). The main page's toolbar still takes precedence when it sets `html.dark`.
 
 ## Commands
 

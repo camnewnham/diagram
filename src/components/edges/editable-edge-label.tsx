@@ -180,7 +180,9 @@ function getArrowPoints(
     if (isBoth) {
       return {
         forward: [{ x: p.sourceX + dx * 0.8, y: p.sourceY + dy * 0.8, angle }],
-        backward: [{ x: p.sourceX + dx * 0.2, y: p.sourceY + dy * 0.2, angle: rev }],
+        backward: [
+          { x: p.sourceX + dx * 0.2, y: p.sourceY + dy * 0.2, angle: rev },
+        ],
       };
     }
     return {
@@ -296,7 +298,7 @@ export function EditableEdge({
         ? "var(--color-primary)"
         : "var(--color-muted-foreground)";
   const dasharray = getDasharray(dashStyle, strokeWidth);
-  const arrowSize = strokeWidth * 2.5 + 3;
+  const arrowSize = strokeWidth * 2 + 3;
 
   const showEnd = arrowStyle === "end" || arrowStyle === "both";
   const showStart = arrowStyle === "start" || arrowStyle === "both";

@@ -1,12 +1,13 @@
 "use client";
 
-import { Grid3X3, Sun, Moon, Monitor } from "lucide-react";
+import { Grid3X3, Sun, Moon, Monitor, Share2, Check } from "lucide-react";
 import { ControlButton, Controls } from "@xyflow/react";
 import { useState, useEffect } from "react";
 
 export function Toolbar() {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const applyTheme = (t: "system" | "light" | "dark") => {
@@ -43,6 +44,14 @@ export function Toolbar() {
     );
   };
 
+  const handleShare = async () => {
+    const hash = window.location.hash;
+    const url = `${window.location.origin}/embed/${hash}`;
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <Controls showInteractive={false}>
       <ControlButton
@@ -64,6 +73,12 @@ export function Toolbar() {
         {theme === "dark" && (
           <Moon strokeWidth={1.5} style={{ fill: "none" }} />
         )}
+      </ControlButton>
+      <ControlButton onClick={handleShare} title="Copy embed link">
+        {copied
+          ? <Check strokeWidth={1.5} style={{ fill: "none" }} />
+          : <Share2 strokeWidth={1.5} style={{ fill: "none" }} />
+        }
       </ControlButton>
     </Controls>
   );

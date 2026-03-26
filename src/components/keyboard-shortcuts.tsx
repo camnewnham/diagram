@@ -43,6 +43,14 @@ export function KeyboardShortcuts() {
         return;
       }
 
+      // Cut: Ctrl+X
+      if (ctrl && e.key === "x") {
+        e.preventDefault();
+        copySelection();
+        deleteSelection();
+        return;
+      }
+
       // Copy: Ctrl+C
       if (ctrl && e.key === "c") {
         e.preventDefault();

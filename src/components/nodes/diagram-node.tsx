@@ -1,18 +1,21 @@
 "use client";
 
-import { memo, useState, useCallback, useRef, useEffect } from "react";
-import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react";
+import { memo, useState, useCallback, useRef, useEffect, useContext } from "react";
+import { Handle, Position, NodeResizer, useUpdateNodeInternals, type NodeProps } from "@xyflow/react";
 import { useDiagramStore } from "@/store/use-diagram-store";
 import { MarkdownLabel } from "@/components/markdown-label";
 import { useModifierKeys } from "@/hooks/use-modifier-keys";
 import type { DiagramNodeData, TextAlign } from "@/store/types";
 import { blendTint } from "@/lib/utils";
 import { useDark } from "@/hooks/use-dark";
+import { ReadOnlyContext } from "@/contexts/read-only-context";
 
 function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as DiagramNodeData;
   const { shape, label, tint, textAlign } = nodeData;
   const dark = useDark();
+  const readOnly = useContext(ReadOnlyContext);
+  const updateNodeInternals = useUpdateNodeInternals();
   const updateNodeLabel = useDiagramStore((s) => s.updateNodeLabel);
   const { shift } = useModifierKeys();
   const [hovered, setHovered] = useState(false);
@@ -27,13 +30,15 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   useEffect(() => {
     const el = sizerRef.current;
     if (!el) return;
-    const measure = () =>
+    const measure = () => {
       setContentSize({ w: el.offsetWidth, h: el.offsetHeight });
+      updateNodeInternals(id);
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [label]);
+  }, [label, id, updateNodeInternals]);
 
   useEffect(() => {
     if (!editing) return;
@@ -101,7 +106,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
 
   const fillColor = tint && tint !== "transparent" ? blendTint(tint, dark) : undefined;
 
-  const content = editing ? (
+  const content = (!readOnly && editing) ? (
     <textarea
       ref={inputRef}
       value={editValue}
@@ -112,8 +117,8 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
     />
   ) : (
     <div
-      onDoubleClick={handleDoubleClick}
-      className={`w-full h-full flex items-center p-2 cursor-text min-h-[40px] ${textAlignClass}`}
+      onDoubleClick={readOnly ? undefined : handleDoubleClick}
+      className={`w-full h-full flex items-center p-2 ${readOnly ? "" : "cursor-text "}min-h-[40px] ${textAlignClass}`}
     >
       <MarkdownLabel text={label} />
     </div>
@@ -122,7 +127,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   const handleClass = `!w-2 !h-2 !border-background ${selected ? "!bg-primary" : "!bg-muted-foreground"}`;
   const handleStyle: React.CSSProperties = { opacity: hovered || selected ? 1 : 0, transition: "opacity 0.15s" };
 
-  const handles = (
+  const handles = readOnly ? null : (
     <>
       {handlePositions.map((pos) => (
         <Handle
@@ -179,12 +184,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
         onMouseLeave={handleMouseLeave}
       >
         {sizer}
-        <NodeResizer
-          isVisible={selected}
-          minWidth={minW}
-          minHeight={minH}
-          keepAspectRatio={shift}
-        />
+        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} />}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox="0 0 100 100"
@@ -215,12 +215,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
         onMouseLeave={handleMouseLeave}
       >
         {sizer}
-        <NodeResizer
-          isVisible={selected}
-          minWidth={minW}
-          minHeight={minH}
-          keepAspectRatio={shift}
-        />
+        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} />}
         {handles}
         <div
           className={`w-full h-full rounded-full border-2 ${borderClass} flex items-center justify-center overflow-hidden`}
@@ -241,12 +236,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
       onMouseLeave={handleMouseLeave}
     >
       {sizer}
-      <NodeResizer
-        isVisible={selected}
-        minWidth={minW}
-        minHeight={minH}
-        keepAspectRatio={shift}
-      />
+      {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} />}
       {handles}
       <div
         className={`w-full h-full border-2 ${borderClass} rounded-lg flex items-center justify-center overflow-hidden`}

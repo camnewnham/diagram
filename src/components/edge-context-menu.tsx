@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import React from "react";
 import { useDiagramStore } from "@/store/use-diagram-store";
 import type { EdgeStyle, EdgeDashStyle, EdgeArrowStyle } from "@/store/types";
 import { TINT_SWATCHES } from "@/store/types";
@@ -45,7 +46,7 @@ function SmoothStepIcon() {
   );
 }
 
-const ROUTING_STYLES: { style: EdgeStyle; Icon: () => JSX.Element; label: string }[] = [
+const ROUTING_STYLES: { style: EdgeStyle; Icon: () => React.ReactElement; label: string }[] = [
   { style: "default", Icon: BezierIcon, label: "Bezier" },
   { style: "straight", Icon: StraightIcon, label: "Straight" },
   { style: "smoothstep", Icon: SmoothStepIcon, label: "Smooth Step" },
@@ -60,7 +61,6 @@ const DASH_STYLES: { style: EdgeDashStyle; label: string }[] = [
 const ARROW_STYLES: { style: EdgeArrowStyle; label: string }[] = [
   { style: "none", label: "None" },
   { style: "start", label: "Forward" },
-  { style: "end", label: "Reverse" },
   { style: "both", label: "Both" },
 ];
 

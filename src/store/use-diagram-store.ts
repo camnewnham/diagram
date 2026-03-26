@@ -83,7 +83,7 @@ interface DiagramState {
   onEdgesChange: OnEdgesChange<DiagramEdge>;
   onConnect: OnConnect;
 
-  addNode: (shape: NodeShape, position?: { x: number; y: number }, options?: { autoEdit?: boolean }) => void;
+  addNode: (shape: NodeShape | undefined, position?: { x: number; y: number }, options?: { autoEdit?: boolean }) => void;
   updateNodeLabel: (nodeId: string, label: string) => void;
   updateNodeData: (nodeId: string, data: Partial<DiagramNodeData>) => void;
   updateEdgeLabel: (edgeId: string, label: string) => void;
@@ -132,6 +132,11 @@ function nextNodeId() {
 let edgeIdCounter = 0;
 function nextEdgeId() {
   return `edge-${++edgeIdCounter}`;
+}
+
+export function resetCounters(maxNodeId: number, maxEdgeId: number) {
+  nodeIdCounter = maxNodeId;
+  edgeIdCounter = maxEdgeId;
 }
 
 export const useDiagramStore = create<DiagramState>((set, get) => ({

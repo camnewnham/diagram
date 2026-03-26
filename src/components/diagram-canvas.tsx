@@ -24,6 +24,8 @@ import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { CanvasContextMenu } from "@/components/canvas-context-menu";
 import { NodeContextMenu } from "@/components/node-context-menu";
 import { EdgeContextMenu } from "@/components/edge-context-menu";
+import { ReadOnlyContext } from "@/contexts/read-only-context";
+import { useHashSync } from "@/hooks/use-hash-sync";
 
 const nodeTypes: NodeTypes = {
   diagram: DiagramNode,
@@ -45,7 +47,11 @@ type ContextMenuState =
   | { kind: "edge"; x: number; y: number; edgeId: string }
   | null;
 
-export function DiagramCanvas() {
+interface DiagramCanvasProps {
+  readOnly?: boolean;
+}
+
+export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
   const nodes = useDiagramStore((s) => s.nodes);
   const edges = useDiagramStore((s) => s.edges);
   const onNodesChange = useDiagramStore((s) => s.onNodesChange);
@@ -54,11 +60,13 @@ export function DiagramCanvas() {
   const pushHistory = useDiagramStore((s) => s.pushHistory);
   const edgeStyle = useDiagramStore((s) => s.edgeStyle);
   const defaultEdgeStyle = useDiagramStore((s) => s.defaultEdgeStyle);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
   const addNode = useDiagramStore((s) => s.addNode);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [dark, setDark] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+
+  useHashSync();
 
   // Listen for snap toggle from toolbar
   useEffect(() => {
@@ -68,6 +76,13 @@ export function DiagramCanvas() {
     window.addEventListener("diagram:snap", handler);
     return () => window.removeEventListener("diagram:snap", handler);
   }, []);
+
+  // Listen for fit view request after hash load
+  useEffect(() => {
+    const handler = () => fitView({ duration: 200 });
+    window.addEventListener("diagram:fit", handler);
+    return () => window.removeEventListener("diagram:fit", handler);
+  }, [fitView]);
 
   // Watch dark class on <html> to sync React Flow colorMode
   useEffect(() => {
@@ -134,7 +149,7 @@ export function DiagramCanvas() {
       const { x, y } = screenToFlowPosition({ x: clientX, y: clientY });
 
       const fromNodeId = connectionState.fromNode.id;
-      const fromHandleId = connectionState.fromHandle.id;
+      const fromHandleId = connectionState.fromHandle.id ?? "";
       const isSource = connectionState.fromHandle.type === "source";
       const newPos = { x: x - 80, y: y - 40 };
 
@@ -157,79 +172,86 @@ export function DiagramCanvas() {
   const connectionLineType = CONNECTION_LINE_TYPE_MAP[defaultEdgeStyle.edgeStyle ?? edgeStyle];
 
   return (
-    <div style={{ width: "100%", height: "100%" }} className="relative">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeDragStart={handleNodeDragStart}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        snapToGrid={snapToGrid}
-        snapGrid={[16, 16]}
-        fitView
-        selectNodesOnDrag
-        selectionOnDrag
-        panOnScroll={false}
-        zoomOnPinch
-        multiSelectionKeyCode={["Meta", "Control", "Shift"]}
-        zoomOnDoubleClick={false}
-        onConnectEnd={handleConnectEnd}
-        onPaneContextMenu={handlePaneContextMenu}
-        onNodeContextMenu={handleNodeContextMenu}
-        onEdgeContextMenu={handleEdgeContextMenu}
-        onViewportChange={handleViewportChange}
-        selectionMode={SelectionMode.Partial}
-        elevateNodesOnSelect
-        elevateEdgesOnSelect
-        connectionLineType={connectionLineType}
-        connectionRadius={35}
-        edgesReconnectable
-        defaultEdgeOptions={{ type: "default" }}
-        colorMode={dark ? "dark" : "light"}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
-        <MiniMap
-          nodeStrokeWidth={3}
-          zoomable
-          pannable
-          className="!bg-background/80 !border-border"
-        />
-        <Toolbar />
-        <KeyboardShortcuts />
-      </ReactFlow>
-      {contextMenu?.kind === "canvas" && (
-        <CanvasContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          onAddNode={() =>
-            addNode(undefined, {
-              x: contextMenu.flowX - 80,
-              y: contextMenu.flowY - 40,
-            })
-          }
-          onClose={() => setContextMenu(null)}
-        />
-      )}
-      {contextMenu?.kind === "node" && (
-        <NodeContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          nodeId={contextMenu.nodeId}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
-      {contextMenu?.kind === "edge" && (
-        <EdgeContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          edgeId={contextMenu.edgeId}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
-    </div>
+    <ReadOnlyContext.Provider value={readOnly}>
+      <div style={{ width: "100%", height: "100%" }} className="relative">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={readOnly ? undefined : onNodesChange}
+          onEdgesChange={readOnly ? undefined : onEdgesChange}
+          onConnect={readOnly ? undefined : onConnect}
+          onNodeDragStart={readOnly ? undefined : handleNodeDragStart}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          snapToGrid={readOnly ? false : snapToGrid}
+          snapGrid={[16, 16]}
+          fitView
+          selectNodesOnDrag={!readOnly}
+          selectionOnDrag={!readOnly}
+          panOnScroll={false}
+          zoomOnPinch
+          multiSelectionKeyCode={readOnly ? null : ["Meta", "Control", "Shift"]}
+          zoomOnDoubleClick={false}
+          onConnectEnd={readOnly ? undefined : handleConnectEnd}
+          onPaneContextMenu={readOnly ? undefined : handlePaneContextMenu}
+          onNodeContextMenu={readOnly ? undefined : handleNodeContextMenu}
+          onEdgeContextMenu={readOnly ? undefined : handleEdgeContextMenu}
+          onViewportChange={handleViewportChange}
+          selectionMode={SelectionMode.Partial}
+          elevateNodesOnSelect={!readOnly}
+          elevateEdgesOnSelect={!readOnly}
+          nodesDraggable={!readOnly}
+          nodesConnectable={!readOnly}
+          elementsSelectable={!readOnly}
+          connectionLineType={connectionLineType}
+          connectionRadius={35}
+          edgesReconnectable={!readOnly}
+          defaultEdgeOptions={{ type: "default" }}
+          colorMode={dark ? "dark" : "light"}
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+          {!readOnly && (
+            <MiniMap
+              nodeStrokeWidth={3}
+              zoomable
+              pannable
+              className="!bg-background/80 !border-border"
+            />
+          )}
+          {!readOnly && <Toolbar />}
+          {!readOnly && <KeyboardShortcuts />}
+        </ReactFlow>
+        {!readOnly && contextMenu?.kind === "canvas" && (
+          <CanvasContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            onAddNode={() =>
+              addNode(undefined, {
+                x: contextMenu.flowX - 80,
+                y: contextMenu.flowY - 40,
+              })
+            }
+            onClose={() => setContextMenu(null)}
+          />
+        )}
+        {!readOnly && contextMenu?.kind === "node" && (
+          <NodeContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            nodeId={contextMenu.nodeId}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
+        {!readOnly && contextMenu?.kind === "edge" && (
+          <EdgeContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            edgeId={contextMenu.edgeId}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
+      </div>
+    </ReadOnlyContext.Provider>
   );
 }
