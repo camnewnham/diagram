@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import { Spline, Minus, Workflow } from "lucide-react";
 import { useDiagramStore } from "@/store/use-diagram-store";
 import type { EdgeStyle, EdgeDashStyle, EdgeArrowStyle } from "@/store/types";
 import { TINT_SWATCHES } from "@/store/types";
@@ -16,10 +15,40 @@ interface EdgeContextMenuProps {
   onClose: () => void;
 }
 
-const ROUTING_STYLES: { style: EdgeStyle; icon: typeof Spline; label: string }[] = [
-  { style: "default", icon: Spline, label: "Bezier" },
-  { style: "straight", icon: Minus, label: "Straight" },
-  { style: "smoothstep", icon: Workflow, label: "Smooth Step" },
+function BezierIcon() {
+  return (
+    <svg width="24" height="16" viewBox="0 0 24 16" fill="none">
+      <path d="M2 14 C2 14, 10 14, 12 8 S22 2, 22 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <circle cx="2" cy="14" r="2" fill="currentColor" />
+      <circle cx="22" cy="2" r="2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function StraightIcon() {
+  return (
+    <svg width="24" height="16" viewBox="0 0 24 16" fill="none">
+      <line x1="2" y1="14" x2="22" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="2" cy="14" r="2" fill="currentColor" />
+      <circle cx="22" cy="2" r="2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function SmoothStepIcon() {
+  return (
+    <svg width="24" height="16" viewBox="0 0 24 16" fill="none">
+      <polyline points="2,14 12,14 12,2 22,2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <circle cx="2" cy="14" r="2" fill="currentColor" />
+      <circle cx="22" cy="2" r="2" fill="currentColor" />
+    </svg>
+  );
+}
+
+const ROUTING_STYLES: { style: EdgeStyle; Icon: () => JSX.Element; label: string }[] = [
+  { style: "default", Icon: BezierIcon, label: "Bezier" },
+  { style: "straight", Icon: StraightIcon, label: "Straight" },
+  { style: "smoothstep", Icon: SmoothStepIcon, label: "Smooth Step" },
 ];
 
 const DASH_STYLES: { style: EdgeDashStyle; label: string }[] = [
@@ -168,14 +197,14 @@ export function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMenuProps)
       <div>
         <p className="text-xs text-muted-foreground px-1 mb-1">Routing</p>
         <div className="flex gap-1">
-          {ROUTING_STYLES.map(({ style, icon: Icon, label }) => (
+          {ROUTING_STYLES.map(({ style, Icon, label }) => (
             <button
               key={style}
               title={label}
               onClick={() => apply({ edgeStyle: style })}
               className={`${btnBase} ${currentRoutingStyle === style && !affectsAll ? activeClass : idleClass}`}
             >
-              <Icon className="size-4" />
+              <Icon />
             </button>
           ))}
         </div>
