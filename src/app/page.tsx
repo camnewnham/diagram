@@ -8,11 +8,13 @@ const DiagramCanvas = dynamic(
   { ssr: false },
 );
 
+const isEmbedded = typeof window !== "undefined" && window.self !== window.top;
+
 export default function Home() {
   return (
     <main style={{ width: "100vw", height: "100vh" }}>
       <ReactFlowProvider>
-        <DiagramCanvas />
+        <DiagramCanvas readOnly={isEmbedded} />
       </ReactFlowProvider>
     </main>
   );
