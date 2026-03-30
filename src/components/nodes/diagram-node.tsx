@@ -127,7 +127,17 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   const handleClass = `!w-2 !h-2 !border-background ${selected ? "!bg-primary" : "!bg-muted-foreground"}`;
   const handleStyle: React.CSSProperties = { opacity: hovered || selected ? 1 : 0, transition: "opacity 0.15s" };
 
-  const handles = readOnly ? null : (
+  const hiddenHandleStyle: React.CSSProperties = { opacity: 0, pointerEvents: "none", background: "transparent", border: "none" };
+  const handles = readOnly ? (
+    <>
+      {handlePositions.map((pos) => (
+        <Handle key={`s-${pos}`} id={`${pos}-source`} type="source" position={pos} className={handleClass} style={hiddenHandleStyle} />
+      ))}
+      {handlePositions.map((pos) => (
+        <Handle key={`t-${pos}`} id={`${pos}-target`} type="target" position={pos} className={handleClass} style={hiddenHandleStyle} />
+      ))}
+    </>
+  ) : (
     <>
       {handlePositions.map((pos) => (
         <Handle

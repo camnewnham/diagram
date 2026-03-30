@@ -98,8 +98,8 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
   }, []);
 
   const handleViewportChange = useCallback(({ zoom }: Viewport) => {
-    document.documentElement.classList.toggle("zoomed-in", zoom >= 1);
-  }, []);
+    if (!readOnly) document.documentElement.classList.toggle("zoomed-in", zoom >= 1);
+  }, [readOnly]);
 
   const handleNodeDragStart = useCallback(() => {
     pushHistory();
