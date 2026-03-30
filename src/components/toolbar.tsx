@@ -46,7 +46,7 @@ export function Toolbar() {
 
   const handleShare = async () => {
     const hash = window.location.hash;
-    const url = `${window.location.origin}/embed${hash}`;
+    const url = `${window.location.origin}${hash}`;
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
