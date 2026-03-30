@@ -60,13 +60,13 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
   const pushHistory = useDiagramStore((s) => s.pushHistory);
   const edgeStyle = useDiagramStore((s) => s.edgeStyle);
   const defaultEdgeStyle = useDiagramStore((s) => s.defaultEdgeStyle);
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition } = useReactFlow();
   const addNode = useDiagramStore((s) => s.addNode);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [dark, setDark] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
 
-  useHashSync();
+  const initialViewport = useHashSync();
 
   // Listen for snap toggle from toolbar
   useEffect(() => {
@@ -76,13 +76,6 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
     window.addEventListener("diagram:snap", handler);
     return () => window.removeEventListener("diagram:snap", handler);
   }, []);
-
-  // Listen for fit view request after hash load
-  useEffect(() => {
-    const handler = () => fitView({ duration: 200 });
-    window.addEventListener("diagram:fit", handler);
-    return () => window.removeEventListener("diagram:fit", handler);
-  }, [fitView]);
 
   // Watch dark class on <html> to sync React Flow colorMode
   useEffect(() => {
@@ -185,7 +178,6 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
           edgeTypes={edgeTypes}
           snapToGrid={readOnly ? false : snapToGrid}
           snapGrid={[16, 16]}
-          fitView
           selectNodesOnDrag={!readOnly}
           selectionOnDrag={!readOnly}
           panOnScroll={false}
@@ -196,6 +188,7 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
           onPaneContextMenu={readOnly ? undefined : handlePaneContextMenu}
           onNodeContextMenu={readOnly ? undefined : handleNodeContextMenu}
           onEdgeContextMenu={readOnly ? undefined : handleEdgeContextMenu}
+          defaultViewport={initialViewport}
           onViewportChange={handleViewportChange}
           selectionMode={SelectionMode.Partial}
           elevateNodesOnSelect={!readOnly}

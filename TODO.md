@@ -1,9 +1,3 @@
-fix: edges don't render on the embed page
-
-fix: zoom extents on load
-
----
-
 feat: markdown editor
 
 - think about: how can we use a better markdown editor if we are making complex text nodes? i.e. https://uiwjs.github.io/react-md-editor/ -- could be that shift+double click opens it in a better editor. Or just add a right click option that opens the 'full 'editor.
