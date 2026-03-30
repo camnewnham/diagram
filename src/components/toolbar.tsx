@@ -46,7 +46,7 @@ export function Toolbar() {
 
   const handleShare = async () => {
     const hash = window.location.hash;
-    const url = `${window.location.origin}/embed/${hash}`;
+    const url = `${window.location.origin}/embed${hash}`;
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -75,10 +75,11 @@ export function Toolbar() {
         )}
       </ControlButton>
       <ControlButton onClick={handleShare} title="Copy embed link">
-        {copied
-          ? <Check strokeWidth={1.5} style={{ fill: "none" }} />
-          : <Share2 strokeWidth={1.5} style={{ fill: "none" }} />
-        }
+        {copied ? (
+          <Check strokeWidth={1.5} style={{ fill: "none" }} />
+        ) : (
+          <Share2 strokeWidth={1.5} style={{ fill: "none" }} />
+        )}
       </ControlButton>
     </Controls>
   );
