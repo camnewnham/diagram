@@ -11,7 +11,6 @@ import {
   useReactFlow,
   type NodeTypes,
   type EdgeTypes,
-  type Viewport,
   type FinalConnectionState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -27,6 +26,8 @@ import { NodeContextMenu } from "@/components/node-context-menu";
 import { EdgeContextMenu } from "@/components/edge-context-menu";
 import { ReadOnlyContext } from "@/contexts/read-only-context";
 import { useHashSync } from "@/hooks/use-hash-sync";
+
+const FIT_VIEW_PADDING = 0.1;
 
 const nodeTypes: NodeTypes = {
   diagram: DiagramNode,
@@ -66,8 +67,9 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [dark, setDark] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+  const [ready, setReady] = useState(false);
 
-  const initialViewport = useHashSync();
+  useHashSync();
 
   // Listen for snap toggle from toolbar
   useEffect(() => {
@@ -173,7 +175,7 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
 
   return (
     <ReadOnlyContext.Provider value={readOnly}>
-      <div style={{ width: "100%", height: "100%" }} className="relative">
+      <div style={{ width: "100%", height: "100%", visibility: ready ? "visible" : "hidden" }} className="relative">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -196,7 +198,9 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
           onPaneContextMenu={readOnly ? undefined : handlePaneContextMenu}
           onNodeContextMenu={readOnly ? undefined : handleNodeContextMenu}
           onEdgeContextMenu={readOnly ? undefined : handleEdgeContextMenu}
-          defaultViewport={initialViewport}
+          fitView
+          fitViewOptions={{ padding: FIT_VIEW_PADDING }}
+          onInit={() => setReady(true)}
           onViewportChange={handleViewportChange}
           selectionMode={SelectionMode.Partial}
           elevateNodesOnSelect={!readOnly}
