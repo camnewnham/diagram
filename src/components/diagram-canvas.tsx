@@ -94,9 +94,13 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
     return () => observer.disconnect();
   }, []);
 
-  const handleViewportChange = useCallback(({ zoom }: Viewport) => {
-    if (!readOnly) document.documentElement.classList.toggle("zoomed-in", zoom >= 1);
-  }, [readOnly]);
+  const handleViewportChange = useCallback(
+    ({ zoom }: Viewport) => {
+      if (!readOnly)
+        document.documentElement.classList.toggle("zoomed-in", zoom >= 1);
+    },
+    [readOnly],
+  );
 
   const handleNodeDragStart = useCallback(() => {
     pushHistory();
@@ -113,7 +117,13 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
       event.preventDefault();
       const e = event as React.MouseEvent;
       const { x, y } = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-      setContextMenu({ kind: "canvas", x: e.clientX, y: e.clientY, flowX: x, flowY: y });
+      setContextMenu({
+        kind: "canvas",
+        x: e.clientX,
+        y: e.clientY,
+        flowX: x,
+        flowY: y,
+      });
     },
     [screenToFlowPosition],
   );
@@ -122,7 +132,12 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
     (event: React.MouseEvent, node: { id: string }) => {
       event.preventDefault();
       event.stopPropagation();
-      setContextMenu({ kind: "node", x: event.clientX, y: event.clientY, nodeId: node.id });
+      setContextMenu({
+        kind: "node",
+        x: event.clientX,
+        y: event.clientY,
+        nodeId: node.id,
+      });
     },
     [],
   );
@@ -131,7 +146,12 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
     (event: React.MouseEvent, edge: { id: string }) => {
       event.preventDefault();
       event.stopPropagation();
-      setContextMenu({ kind: "edge", x: event.clientX, y: event.clientY, edgeId: edge.id });
+      setContextMenu({
+        kind: "edge",
+        x: event.clientX,
+        y: event.clientY,
+        edgeId: edge.id,
+      });
     },
     [],
   );
@@ -172,11 +192,19 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
   );
 
   // The connection line type tracks the default edge style for new connections
-  const connectionLineType = CONNECTION_LINE_TYPE_MAP[defaultEdgeStyle.edgeStyle ?? edgeStyle];
+  const connectionLineType =
+    CONNECTION_LINE_TYPE_MAP[defaultEdgeStyle.edgeStyle ?? edgeStyle];
 
   return (
     <ReadOnlyContext.Provider value={readOnly}>
-      <div style={{ width: "100%", height: "100%", visibility: ready ? "visible" : "hidden" }} className="relative">
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          visibility: ready ? "visible" : "hidden",
+        }}
+        className="relative"
+      >
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -215,6 +243,8 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
           defaultEdgeOptions={{ type: "default" }}
           colorMode={dark ? "dark" : "light"}
           proOptions={{ hideAttribution: true }}
+          minZoom={0.2}
+          maxZoom={4}
         >
           <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
           {!readOnly && (
