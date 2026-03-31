@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -63,29 +63,14 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
   const pushHistory = useDiagramStore((s) => s.pushHistory);
   const edgeStyle = useDiagramStore((s) => s.edgeStyle);
   const defaultEdgeStyle = useDiagramStore((s) => s.defaultEdgeStyle);
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition } = useReactFlow();
   const addNode = useDiagramStore((s) => s.addNode);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [dark, setDark] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const [ready, setReady] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useHashSync();
-
-  // Re-fit on container resize (handles iframe being resized by embedder like Notion)
-  // In edit mode, only used for the initial ready state — observer disconnects after first fire.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => {
-      fitView({ padding: FIT_VIEW_PADDING });
-      setReady(true);
-      if (!readOnly) ro.disconnect();
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [fitView, readOnly]);
 
   // Listen for snap toggle from toolbar
   useEffect(() => {
@@ -191,7 +176,7 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
 
   return (
     <ReadOnlyContext.Provider value={readOnly}>
-      <div ref={containerRef} style={{ width: "100%", height: "100%", visibility: ready ? "visible" : "hidden" }} className="relative">
+      <div style={{ width: "100%", height: "100%", visibility: ready ? "visible" : "hidden" }} className="relative">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -216,6 +201,7 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
           onEdgeContextMenu={readOnly ? undefined : handleEdgeContextMenu}
           fitView
           fitViewOptions={{ padding: FIT_VIEW_PADDING }}
+          onInit={() => setReady(true)}
           onViewportChange={handleViewportChange}
           selectionMode={SelectionMode.Partial}
           elevateNodesOnSelect={!readOnly}
