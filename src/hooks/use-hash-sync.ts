@@ -8,7 +8,7 @@ import type { Viewport } from "@xyflow/react";
 const DEBOUNCE_MS = 300;
 const PADDING = 0.1;
 
-export function computeViewportForNodes(
+function computeViewportForNodes(
   nodes: { position: { x: number; y: number }; width?: number; height?: number }[],
   containerWidth: number,
   containerHeight: number,
@@ -69,7 +69,9 @@ export function useHashSync(): Viewport | undefined {
         useDiagramStore.getState().setDefaultNodeStyle(dns);
         useDiagramStore.getState().setDefaultEdgeStyle(des);
         useDiagramStore.setState({ nodes: loadedNodes, edges: loadedEdges, past: [], future: [] });
-        initialViewport.current = computeViewportForNodes(loadedNodes, window.innerWidth, window.innerHeight);
+        const w = document.documentElement.clientWidth;
+        const h = document.documentElement.clientHeight;
+        initialViewport.current = computeViewportForNodes(loadedNodes, w, h);
       }
     }
   }

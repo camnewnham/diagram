@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -17,7 +17,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useDiagramStore, interactingRef } from "@/store/use-diagram-store";
 import type { EdgeStyle } from "@/store/types";
-import { flushHashEncode, computeViewportForNodes } from "@/hooks/use-hash-sync";
+import { flushHashEncode } from "@/hooks/use-hash-sync";
 import { DiagramNode } from "@/components/nodes/diagram-node";
 import { EditableEdge } from "@/components/edges/editable-edge-label";
 import { Toolbar } from "@/components/toolbar";
@@ -61,43 +61,13 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
   const pushHistory = useDiagramStore((s) => s.pushHistory);
   const edgeStyle = useDiagramStore((s) => s.edgeStyle);
   const defaultEdgeStyle = useDiagramStore((s) => s.defaultEdgeStyle);
-  const { screenToFlowPosition, setViewport } = useReactFlow();
+  const { screenToFlowPosition } = useReactFlow();
   const addNode = useDiagramStore((s) => s.addNode);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [dark, setDark] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
 
   const initialViewport = useHashSync();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // After mount, if the container size differs from the window size used to compute
-  // the initial viewport, animate to the corrected viewport.
-  useEffect(() => {
-    if (!initialViewport) return;
-    const el = containerRef.current;
-    if (!el) return;
-
-    let animated = false;
-    const observer = new ResizeObserver((entries) => {
-      if (animated) return;
-      const entry = entries[0];
-      if (!entry) return;
-      const { width, height } = entry.contentRect;
-      if (
-        Math.abs(width - window.innerWidth) < 2 &&
-        Math.abs(height - window.innerHeight) < 2
-      ) return;
-      animated = true;
-      const nodes = useDiagramStore.getState().nodes;
-      const viewport = computeViewportForNodes(nodes, width, height);
-      if (viewport) {
-        setViewport(viewport, { duration: 400 });
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Listen for snap toggle from toolbar
   useEffect(() => {
@@ -203,7 +173,7 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
 
   return (
     <ReadOnlyContext.Provider value={readOnly}>
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} className="relative">
+      <div style={{ width: "100%", height: "100%" }} className="relative">
         <ReactFlow
           nodes={nodes}
           edges={edges}
