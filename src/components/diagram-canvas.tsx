@@ -11,6 +11,7 @@ import {
   useReactFlow,
   type NodeTypes,
   type EdgeTypes,
+  type Viewport,
   type FinalConnectionState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
