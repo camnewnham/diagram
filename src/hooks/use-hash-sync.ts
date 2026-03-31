@@ -8,7 +8,7 @@ import type { Viewport } from "@xyflow/react";
 const DEBOUNCE_MS = 300;
 const PADDING = 0.1;
 
-function computeViewportForNodes(
+export function computeViewportForNodes(
   nodes: { position: { x: number; y: number }; width?: number; height?: number }[],
   containerWidth: number,
   containerHeight: number,
