@@ -15,8 +15,9 @@ import {
   type FinalConnectionState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useDiagramStore } from "@/store/use-diagram-store";
+import { useDiagramStore, interactingRef } from "@/store/use-diagram-store";
 import type { EdgeStyle } from "@/store/types";
+import { flushHashEncode } from "@/hooks/use-hash-sync";
 import { DiagramNode } from "@/components/nodes/diagram-node";
 import { EditableEdge } from "@/components/edges/editable-edge-label";
 import { Toolbar } from "@/components/toolbar";
@@ -96,7 +97,13 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
 
   const handleNodeDragStart = useCallback(() => {
     pushHistory();
+    interactingRef.current = true;
   }, [pushHistory]);
+
+  const handleNodeDragStop = useCallback(() => {
+    interactingRef.current = false;
+    flushHashEncode();
+  }, []);
 
   const handlePaneContextMenu = useCallback(
     (event: React.MouseEvent | MouseEvent) => {
@@ -174,6 +181,7 @@ export function DiagramCanvas({ readOnly = false }: DiagramCanvasProps) {
           onEdgesChange={readOnly ? undefined : onEdgesChange}
           onConnect={readOnly ? undefined : onConnect}
           onNodeDragStart={readOnly ? undefined : handleNodeDragStart}
+          onNodeDragStop={readOnly ? undefined : handleNodeDragStop}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           snapToGrid={readOnly ? false : snapToGrid}

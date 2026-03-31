@@ -23,7 +23,7 @@ import type {
 } from "./types";
 import { EDGE_STYLES } from "./types";
 
-export const resizingRef = { current: false };
+export const interactingRef = { current: false };
 
 const MAX_HISTORY = 100;
 const LS_DEFAULT_NODE = "diagram:defaultNodeStyle";

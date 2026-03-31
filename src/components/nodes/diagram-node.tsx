@@ -2,7 +2,7 @@
 
 import { memo, useState, useCallback, useRef, useEffect, useContext } from "react";
 import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react";
-import { useDiagramStore, resizingRef } from "@/store/use-diagram-store";
+import { useDiagramStore, interactingRef } from "@/store/use-diagram-store";
 import { MarkdownLabel } from "@/components/markdown-label";
 import { useModifierKeys } from "@/hooks/use-modifier-keys";
 import type { DiagramNodeData, TextAlign } from "@/store/types";
@@ -199,7 +199,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
       >
 
         {sizer}
-        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} onResizeStart={() => { pushHistory(); resizingRef.current = true; }} onResizeEnd={() => { resizingRef.current = false; flushHashEncode(); }} />}
+        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} onResizeStart={() => { pushHistory(); interactingRef.current = true; }} onResizeEnd={() => { interactingRef.current = false; flushHashEncode(); }} />}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox="0 0 100 100"
@@ -231,7 +231,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
       >
 
         {sizer}
-        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} onResizeStart={() => { pushHistory(); resizingRef.current = true; }} onResizeEnd={() => { resizingRef.current = false; flushHashEncode(); }} />}
+        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} onResizeStart={() => { pushHistory(); interactingRef.current = true; }} onResizeEnd={() => { interactingRef.current = false; flushHashEncode(); }} />}
         {handles}
         <div
           className={`w-full h-full rounded-full border-2 ${borderClass} flex items-center justify-center overflow-hidden`}
@@ -252,7 +252,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
       onMouseLeave={handleMouseLeave}
     >
       {sizer}
-      {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} onResizeStart={() => { pushHistory(); resizingRef.current = true; }} onResizeEnd={() => { resizingRef.current = false; flushHashEncode(); }} />}
+      {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} onResizeStart={() => { pushHistory(); interactingRef.current = true; }} onResizeEnd={() => { interactingRef.current = false; flushHashEncode(); }} />}
       {handles}
       <div
         className={`w-full h-full border-2 ${borderClass} rounded-lg flex items-center justify-center overflow-hidden`}

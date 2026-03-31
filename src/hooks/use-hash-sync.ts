@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useDiagramStore, resetCounters, SHAPE_SIZES, resizingRef } from "@/store/use-diagram-store";
+import { useDiagramStore, resetCounters, SHAPE_SIZES, interactingRef } from "@/store/use-diagram-store";
 import { encodeDiagram, decodeDiagram } from "@/lib/serialization";
 import type { Viewport } from "@xyflow/react";
 
@@ -84,7 +84,7 @@ export function useHashSync(): Viewport | undefined {
     if (timerRef.current) clearTimeout(timerRef.current);
 
     timerRef.current = setTimeout(() => {
-      if (resizingRef.current) return;
+      if (interactingRef.current) return;
       if (nodes.length === 0 && edges.length === 0) {
         history.replaceState(null, "", window.location.pathname);
         return;
