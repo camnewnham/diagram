@@ -116,8 +116,8 @@ export function encodeDiagram(
     const y = Math.round(n.position.y);
     const shape = n.data.shape;
     const defaultSize = SHAPE_SIZES[shape];
-    const w = Math.round((n.style?.width as number) ?? defaultSize.width);
-    const h = Math.round((n.style?.height as number) ?? defaultSize.height);
+    const w = Math.round((n.width ?? (n.style?.width as number)) ?? defaultSize.width);
+    const h = Math.round((n.height ?? (n.style?.height as number)) ?? defaultSize.height);
     const label = n.data.label ?? "";
 
     const tuple: unknown[] = [idNum, x, y, w, h, label];

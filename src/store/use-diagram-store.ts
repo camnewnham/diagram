@@ -1,3 +1,4 @@
+import type React from "react";
 import { create } from "zustand";
 import {
   applyNodeChanges,
@@ -21,6 +22,8 @@ import type {
   DefaultEdgeStyle,
 } from "./types";
 import { EDGE_STYLES } from "./types";
+
+export const resizingRef = { current: false };
 
 const MAX_HISTORY = 100;
 const LS_DEFAULT_NODE = "diagram:defaultNodeStyle";
@@ -88,6 +91,7 @@ interface DiagramState {
   updateNodeData: (nodeId: string, data: Partial<DiagramNodeData>) => void;
   updateEdgeLabel: (edgeId: string, label: string) => void;
   updateEdgeData: (edgeId: string, data: Partial<DiagramEdgeData>) => void;
+  updateNodeStyle: (nodeId: string, style: Partial<React.CSSProperties>) => void;
   updateSelectedNodesData: (data: Partial<DiagramNodeData>) => void;
   updateSelectedEdgesData: (data: Partial<DiagramEdgeData>) => void;
 
@@ -239,6 +243,14 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     set({
       nodes: get().nodes.map((n) =>
         n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n
+      ),
+    });
+  },
+
+  updateNodeStyle: (nodeId, style) => {
+    set({
+      nodes: get().nodes.map((n) =>
+        n.id === nodeId ? { ...n, style: { ...n.style, ...style } } : n
       ),
     });
   },

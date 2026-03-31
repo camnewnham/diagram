@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useDiagramStore, resetCounters, SHAPE_SIZES } from "@/store/use-diagram-store";
+import { useDiagramStore, resetCounters, SHAPE_SIZES, resizingRef } from "@/store/use-diagram-store";
 import { encodeDiagram, decodeDiagram } from "@/lib/serialization";
 import type { Viewport } from "@xyflow/react";
 
@@ -34,6 +34,16 @@ function computeViewportForNodes(
   const x = (containerWidth - bw * zoom) / 2 - minX * zoom;
   const y = (containerHeight - bh * zoom) / 2 - minY * zoom;
   return { x, y, zoom };
+}
+
+export function flushHashEncode() {
+  const { nodes, edges, defaultNodeStyle, defaultEdgeStyle } = useDiagramStore.getState();
+  if (nodes.length === 0 && edges.length === 0) {
+    history.replaceState(null, "", window.location.pathname);
+    return;
+  }
+  const encoded = encodeDiagram(nodes, edges, defaultNodeStyle, defaultEdgeStyle);
+  history.replaceState(null, "", "#" + encoded);
 }
 
 export function useHashSync(): Viewport | undefined {
@@ -74,6 +84,7 @@ export function useHashSync(): Viewport | undefined {
     if (timerRef.current) clearTimeout(timerRef.current);
 
     timerRef.current = setTimeout(() => {
+      if (resizingRef.current) return;
       if (nodes.length === 0 && edges.length === 0) {
         history.replaceState(null, "", window.location.pathname);
         return;

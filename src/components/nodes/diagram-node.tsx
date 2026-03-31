@@ -1,22 +1,25 @@
 "use client";
 
 import { memo, useState, useCallback, useRef, useEffect, useContext } from "react";
-import { Handle, Position, NodeResizer, useUpdateNodeInternals, type NodeProps } from "@xyflow/react";
-import { useDiagramStore } from "@/store/use-diagram-store";
+import { Handle, Position, NodeResizer, type NodeProps } from "@xyflow/react";
+import { useDiagramStore, resizingRef } from "@/store/use-diagram-store";
 import { MarkdownLabel } from "@/components/markdown-label";
 import { useModifierKeys } from "@/hooks/use-modifier-keys";
 import type { DiagramNodeData, TextAlign } from "@/store/types";
 import { blendTint } from "@/lib/utils";
 import { useDark } from "@/hooks/use-dark";
 import { ReadOnlyContext } from "@/contexts/read-only-context";
+import { flushHashEncode } from "@/hooks/use-hash-sync";
 
 function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as DiagramNodeData;
   const { shape, label, tint, textAlign } = nodeData;
   const dark = useDark();
   const readOnly = useContext(ReadOnlyContext);
-  const updateNodeInternals = useUpdateNodeInternals();
   const updateNodeLabel = useDiagramStore((s) => s.updateNodeLabel);
+  const updateNodeStyle = useDiagramStore((s) => s.updateNodeStyle);
+  const pushHistory = useDiagramStore((s) => s.pushHistory);
+  const storedHeight = useDiagramStore((s) => s.nodes.find((n) => n.id === id)?.style?.height as number | undefined);
   const { shift } = useModifierKeys();
   const [hovered, setHovered] = useState(false);
   const handleMouseEnter = useCallback(() => setHovered(true), []);
@@ -25,20 +28,26 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   const [editValue, setEditValue] = useState(() => nodeData.autoEdit ? "" : label);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const sizerRef = useRef<HTMLDivElement>(null);
-  const [contentSize, setContentSize] = useState({ w: 0, h: 0 });
+  const [contentH, setContentH] = useState(0);
 
   useEffect(() => {
     const el = sizerRef.current;
     if (!el) return;
-    const measure = () => {
-      setContentSize({ w: el.offsetWidth, h: el.offsetHeight });
-      updateNodeInternals(id);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [label, id, updateNodeInternals]);
+    const obs = new ResizeObserver(() => setContentH(el.offsetHeight));
+    obs.observe(el);
+    setContentH(el.offsetHeight);
+    return () => obs.disconnect();
+  }, []);
+
+  // When content height exceeds the stored node height, update the stored height
+  // so React Flow repositions edges to match the actual rendered node size.
+  useEffect(() => {
+    if (readOnly) return;
+    const needed = contentH + 16;
+    if (storedHeight !== undefined && needed > storedHeight) {
+      updateNodeStyle(id, { height: needed });
+    }
+  }, [contentH, storedHeight, id, readOnly, updateNodeStyle]);
 
   useEffect(() => {
     if (!editing) return;
@@ -65,7 +74,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
   const commitEdit = useCallback(() => {
     setEditing(false);
     if (editValue.trim() !== label) {
-      updateNodeLabel(id, editValue.trim() || label);
+      updateNodeLabel(id, editValue.trim());
     }
   }, [editValue, id, label, updateNodeLabel]);
 
@@ -164,24 +173,19 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
 
   const borderClass = selected ? "border-primary" : "border-muted-foreground";
 
-  const minW = Math.max(80, contentSize.w + 16);
-  const minH = Math.max(shape === "rectangle" ? 40 : 60, contentSize.h + 16);
+  const minW = 120;
+  const minH = Math.max(shape === "rectangle" ? 40 : 60, contentH + 16);
 
   const sizer = (
     <div
       ref={sizerRef}
-      style={{
-        position: "fixed",
-        top: -9999,
-        left: -9999,
-        visibility: "hidden",
-        pointerEvents: "none",
-      }}
+      className="absolute invisible pointer-events-none w-full p-2 text-sm leading-snug"
       aria-hidden
     >
       <MarkdownLabel text={label} />
     </div>
   );
+
 
   if (shape === "diamond") {
     const stroke = selected ? "var(--color-primary)" : "var(--color-muted-foreground)";
@@ -193,8 +197,9 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
+
         {sizer}
-        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} />}
+        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} onResizeStart={() => { pushHistory(); resizingRef.current = true; }} onResizeEnd={() => { resizingRef.current = false; flushHashEncode(); }} />}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox="0 0 100 100"
@@ -224,8 +229,9 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
+
         {sizer}
-        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} />}
+        {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} onResizeStart={() => { pushHistory(); resizingRef.current = true; }} onResizeEnd={() => { resizingRef.current = false; flushHashEncode(); }} />}
         {handles}
         <div
           className={`w-full h-full rounded-full border-2 ${borderClass} flex items-center justify-center overflow-hidden`}
@@ -246,7 +252,7 @@ function DiagramNodeComponent({ id, data, selected }: NodeProps) {
       onMouseLeave={handleMouseLeave}
     >
       {sizer}
-      {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} />}
+      {!readOnly && <NodeResizer isVisible={selected} minWidth={minW} minHeight={minH} keepAspectRatio={shift} onResizeStart={() => { pushHistory(); resizingRef.current = true; }} onResizeEnd={() => { resizingRef.current = false; flushHashEncode(); }} />}
       {handles}
       <div
         className={`w-full h-full border-2 ${borderClass} rounded-lg flex items-center justify-center overflow-hidden`}
